@@ -1,0 +1,46 @@
+name: Learnify Attendance CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    name: Build, Lint y Pruebas
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - name: 1. Checkout del código
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 3. Instalar dependencias (npm ci)
+        run: npm ci
+
+      - name: 4. Análisis de Código Estático (ESLint)
+        run: npx expo lint
+
+      - name: 5. Ejecutar Pruebas Unitarias (Jest)
+        run: npm run test -- --coverage --watchAll=false
+
+      - name: 6. Compilación Web (Build con Expo)
+        run: npx expo export --platform web
+
+      - name: 7. Subir reporte de cobertura como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura
+          path: coverage/
+          retention-days: 7
